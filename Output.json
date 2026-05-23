@@ -1,0 +1,33 @@
+{
+    "other_contract_1.pdf": {
+        "class": "Other"
+    },
+    "utility_bill_1.pdf": {
+        "class": "Utility Bill",
+        "account_number": "PPL-4471-0092-8831",
+        "date": "January 28, 2025",
+        "usage_kwh": 847.0,
+        "amount_due": 155.26
+    },
+    "invoice_2.pdf": {
+        "class": "Invoice",
+        "invoice_number": "VCA-2025-0088",
+        "date": "March 3, 2025",
+        "company": "Vertex Creative Agency",
+        "total_amount": 11236.0
+    },
+    "invoice_1.pdf": {
+        "class": "Invoice",
+        "invoice_number": "INV-2025-0471",
+        "date": "January 15, 2025",
+        "company": "ACME Solutions Ltd.",
+        "total_amount": 19192.75
+    },
+    "Awais_Aslam.pdf.pdf": {
+        "class": "Resume",
+        "email": "awaisaslam668@gmail.com",
+        "phone": "+92 3125699400",
+        "experience_years": 1.5,
+        "name": "M. Awais Aslam"
+    }
+}
