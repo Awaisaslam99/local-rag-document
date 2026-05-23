@@ -123,24 +123,42 @@ if st.session_state.processed_results:
         with tab2:
             st.json(st.session_state.processed_results)
 
-    # --- Semantic Search & QA ---
+    # --- Right: Semantic Search & QA ---
     with right_col:
-        st.subheader("Semantic Search & QA")
-        query_input = st.text_input(
-            "Ask something about your documents:",
-            placeholder="Ask Questions about uploaded files..."
-        )
+        tab_search, tab_qa = st.tabs(["Semantic Search", "Ask a Question (AI)"])
 
-        if query_input and st.session_state.qa_engine:
-            with st.spinner("Generating answer..."):
-                qa_result = st.session_state.qa_engine.answer(query_input)
+        with tab_search:
+            st.subheader("Semantic Search")
+            search_query = st.text_input(
+                "Search documents by meaning:",
+                placeholder="e.g. payments due in January"
+            )
+            if search_query and st.session_state.search_engine:
+                hits = st.session_state.search_engine.search(search_query)
+                if hits:
+                    for hit in hits:
+                        with st.container(border=True):
+                            st.markdown(f"**{hit['filename']}** — Score: `{hit['score']:.4f}`")
+                            st.caption(hit["snippet"])
+                else:
+                    st.info("No matching documents found.")
 
-            if qa_result["sources"]:
-                st.markdown("##### Direct Answer")
-                with st.container(border=True):
-                    st.markdown(qa_result["answer"])
-            else:
-                st.info("No matching documents found.")
+        with tab_qa:
+            st.subheader("Ask a Question (AI)")
+            query_input = st.text_input(
+                "Ask something about your documents:",
+                placeholder="Ask Questions about uploaded files..."
+            )
+            if query_input and st.session_state.qa_engine:
+                with st.spinner("Generating answer..."):
+                    qa_result = st.session_state.qa_engine.answer(query_input)
+
+                if qa_result["sources"]:
+                    st.markdown("##### Answer")
+                    with st.container(border=True):
+                        st.markdown(qa_result["answer"])
+                else:
+                    st.info("No matching documents found.")
 
 else:
     st.info("Upload documents in the sidebar to and run the pipeline.")
