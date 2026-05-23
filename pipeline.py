@@ -1022,8 +1022,6 @@ if __name__ == "__main__":
     parser.add_argument("folder", help="Path to folder containing PDF/TXT documents")
     parser.add_argument("--output", default="Output.json", help="Output JSON file path")
     parser.add_argument("--search", type=str, default=None, help="Run a semantic search query")
-    parser.add_argument("--top-k", type=int, default=3, help="Number of search results")
-    args = parser.parse_args()
 
     # Step 1: Ingest
     print(f"\n[STEP 1] Ingesting documents from: {args.folder}")

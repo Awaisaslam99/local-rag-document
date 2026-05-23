@@ -51,39 +51,10 @@ pip install -r requirements.txt
 
 ## How to Run
 
-### Option A — CLI (Command Line)
+### — Streamlit UI
 
 ```bash
-# Basic: classify and extract from a folder, save Output.json
-python pipeline.py ./documents
-
-# With semantic search query
-python pipeline.py ./documents --search "Find invoices due in January"
-
-# Custom output file and top-k results
-python pipeline.py ./documents --output results.json --search "utility bills" --top-k 3
-```
-
-**Example CLI output:**
-```
-[STEP 1] Ingesting documents from: ./documents
-  → Loaded 5 document(s): ['invoice_1.pdf', 'invoice_2.pdf', ...]
-
-[STEP 2] Classifying and extracting fields...
-[INFO] Processing: invoice_1.pdf
-...
-
-[STEP 3] Results saved to: Output.json
-
-[STEP 4] Semantic search: "invoices due in January"
-  1. [0.8921] invoice_1.pdf
-     Snippet: ACME Solutions Ltd. Invoice Date: January 15, 2025 ...
-```
-
-### Option B — Streamlit UI
-
-```bash
-streamlit run app.py
+streamlit run app.py / python -m streamlit run app.py
 ```
 
 Then open `http://localhost:8501` in your browser. Upload PDFs via the sidebar and click **Process Documents**. Once processed, type any question in the search box to get a direct answer from the local LLM.
