@@ -241,7 +241,6 @@ class DocumentProcessor:
         data["invoice_number"] = inv_match.group(1).strip() if inv_match else "N/A"
 
         # --- Date ---
-        # Covers: "2025-01-15", "01/15/2025", "January 15, 2025", "15 Jan 2025"
         date_match = re.search(
             r"(?:invoice\s*date|date\s*issued?|date)[:\s]*"
             r"(\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b"
@@ -261,9 +260,6 @@ class DocumentProcessor:
         data["date"] = date_match.group(1).strip() if date_match else "N/A"
 
         # --- Company Name ---
-        # Strategy: look for the FROM/provider side of the invoice.
-        # Most invoices start with or have a clear header with the issuing company.
-        # We look for lines before "Invoice" header or "Billed To / Bill To" block.
         company = "N/A"
 
         # Pattern 1: Explicit "From:" label
@@ -432,16 +428,14 @@ class DocumentProcessor:
 
         def _title_case_name(raw):
             """Convert ALL-CAPS or fused name to Title Case and return clean string."""
-            # Step 1: fix fused CamelCase — "ShahryarArshad" → "Shahryar Arshad"
+
             spaced = re.sub(r'(?<=[a-z])(?=[A-Z])', ' ', raw)
             spaced = re.sub(r'(?<=\.)(?=[A-Z])', ' ', spaced)
-            # Step 2: title-case all-caps words — "ASIF" → "Asif"
             parts = []
             for token in spaced.split():
                 if token.isupper() and len(token) > 1:
                     parts.append(token.capitalize())
                 elif token == token.upper() and '.' in token:
-                    # Initials like "M." stay as-is
                     parts.append(token)
                 else:
                     parts.append(token)
@@ -463,7 +457,7 @@ class DocumentProcessor:
             # Title-case word: starts with capital, rest are letters/hyphens/apostrophes
             if re.match(r'^[A-Z][a-zA-Z\'\-]{1,24}$', token):
                 return True
-            # ALL-CAPS word (short — ≤12 chars), e.g. "ASIF", "AKRAM"
+
             if re.match(r'^[A-Z]{2,12}$', token):
                 return True
             return False
@@ -490,21 +484,18 @@ class DocumentProcessor:
                 return False
             return True
 
-        # ── Strategy 1: scan the first 15 non-empty lines ──────────────────────
-        # Most CVs put the name at or near the very top.
+        # ── scan the first 15 non-empty lines ───────
         for line in text.split("\n")[:15]:
             line = line.strip()
             if not line:
                 continue
-            # Unfuse CamelCase before checking so "ShahryarArshad" → "Shahryar Arshad"
             unf = re.sub(r'(?<=[a-z])(?=[A-Z])', ' ', line)
             unf = re.sub(r'(?<=\.)(?=[A-Z])', ' ', unf).strip()
             if _is_valid_name(unf):
                 name = _title_case_name(line)
                 break
 
-        # ── Strategy 2: look just before the email address ─────────────────────
-        # Handles layouts where name and email are on adjacent lines.
+        # ── Strategy 2: look just before the email address ─────────
         if name == "N/A" and data.get("email") and data["email"] != "N/A":
             email_pos = text.find(data["email"])
             if email_pos == -1:
@@ -519,15 +510,13 @@ class DocumentProcessor:
                     name = _title_case_name(candidate_line)
                     break
 
-        # ── Strategy 3: broader first-25-lines scan with relaxed token count ───
-        # Catches names that appear after a short header line (e.g. "OPEN TO WORK").
+        # ── broader first-25-lines scan with relaxed token count ───
         if name == "N/A":
             first_lines = [l.strip() for l in text.split("\n") if l.strip()][:25]
             for line in first_lines:
                 unf = re.sub(r'(?<=[a-z])(?=[A-Z])', ' ', line)
                 unf = re.sub(r'(?<=\.)(?=[A-Z])', ' ', unf).strip()
                 tokens = unf.split()
-                # Allow single-token fused names like "ShahryarArshad" (after unfusing = 2)
                 if 2 <= len(tokens) <= 5 and _is_valid_name(unf):
                     name = _title_case_name(line)
                     break
@@ -544,7 +533,6 @@ class DocumentProcessor:
         data = {}
 
         # --- Account Number ---
-        # Handles formats like: PPL-4471-0092-8831, 12345678, ACC-0099
         acc_match = re.search(
             r"(?:account\s*(?:number|no\.?|#)?)[:\s]+([A-Z0-9][A-Z0-9\-]{4,})",
             text, re.IGNORECASE
@@ -566,12 +554,8 @@ class DocumentProcessor:
             )
         data["date"] = date_match.group(1).strip() if date_match else "N/A"
 
-        # --- Usage (kWh) ---
-        # Problem: PDFs often have cumulative meter reads like "14,382 kWh" alongside
-        # the actual usage like "847 kWh". We anchor to the Usage/Consumption label
-        # first, then fall back to the smallest standalone kWh value (avoids large
-        # cumulative meter totals).
-        # Priority 1: labeled usage in the summary table
+        # --- Usage ---
+        # labeled usage in the summary table
         usage_match = re.search(
             r"(?:usage|consumption|current\s+usage|units\s+consumed)"
             r"[^\d\n]{0,40}?(\d{3,5}(?:\.\d+)?)\s*kWh",
@@ -651,9 +635,9 @@ class LocalSearchEngine:
         self.chunks = []
         chunk_texts = []
 
-        CHUNK_SIZE    = 10   # lines per chunk
-        OVERLAP       = 3    # lines overlap between chunks (preserves context at boundaries)
-        MIN_LINE_LEN  = 15   # ignore very short lines like page numbers
+        CHUNK_SIZE    = 10   
+        OVERLAP       = 3    
+        MIN_LINE_LEN  = 15   
 
         for fname, doc_text in zip(self.filenames, self.corpus_texts):
             # Split into clean lines, filter noise
@@ -711,7 +695,7 @@ class LocalSearchEngine:
                 seen_files[fname] = {
                     "filename": fname,
                     "score":    float(score),
-                    "snippet":  self.chunks[idx]["text"],  # full chunk, not 1 line
+                    "snippet":  self.chunks[idx]["text"],  
                 }
 
         all_results = sorted(seen_files.values(), key=lambda x: x["score"], reverse=True)
@@ -761,7 +745,7 @@ class DocumentQA:
             "lahore", "karachi", "islamabad", "pakistan", "usa", "uk",
         }
 
-        # Pattern 1: "Job Title — Company Name" or "Job Title – Company Name"
+        # "Job Title — Company Name" or "Job Title – Company Name"
         for match in re.finditer(
             r"(?:—|–|--)\s*([A-Z][A-Za-z0-9&.',\s]{2,50})(?:\n|$|\|)",
             text
@@ -777,7 +761,6 @@ class DocumentQA:
                     seen.add(key)
                     employers.append(candidate)
 
-        # Pattern 2: lines that end with "Pvt Ltd", "Inc", "Corp", "Technologies" etc.
         for match in re.finditer(
             r"([A-Z][A-Za-z0-9&.',\s]{2,50}?"
             r"(?:Pvt\.?\s*Ltd|Inc\.?|Corp\.?|LLC|Technologies|Solutions|Services|Group|Systems|Agency))"
@@ -790,7 +773,7 @@ class DocumentQA:
                 seen.add(key)
                 employers.append(candidate)
 
-        return employers[:6]  # return up to 6 employers
+        return employers[:6]  
     
     def _detect_intent(self, query):
         found = []
@@ -805,7 +788,7 @@ class DocumentQA:
         intent_fields = self._detect_intent(query)
         sources = []
 
-        # --- Step 1: Detect document type from query ---
+        # ---  Detect document type from query ---
         type_hint = None
         if re.search(r'\b(worked|employer|company|experience|resume|cv|candidate|applicant|skills|project|built|developed|certification|education)\b',
                     query, re.IGNORECASE):
@@ -815,9 +798,7 @@ class DocumentQA:
         elif re.search(r'\b(utility|electricity|kwh|energy|bill|account\s*no)\b', query, re.IGNORECASE):
             type_hint = "Utility Bill"
 
-        # --- Step 2: If type_hint, ONLY use docs of that class — skip FAISS for doc selection ---
         if type_hint:
-            # Pick docs that match the type directly from processed results
             matching_fnames = [
                 fname for fname, fields in self.results.items()
                 if fields.get("class") == type_hint
@@ -834,7 +815,7 @@ class DocumentQA:
         if not hits:
             return {"answer": "No relevant documents found.", "sources": [], "hits": []}
 
-        # --- Step 3: Build LLM context using best_snippet from RAW TEXT (not FAISS chunk) ---
+        # ---Build LLM context using best_snippet from RAW TEXT 
         llm_context_docs = []
         for hit in hits:
             fname     = hit["filename"]
@@ -865,7 +846,7 @@ class DocumentQA:
                 "snippet":     best_snip,
             })
 
-        # --- Step 4: Generate grounded answer using local LLM ---
+        # --- Generate grounded answer using local LLM ---
         llm_answer = self.llm.generate_answer(query, llm_context_docs)
         return {"answer": llm_answer, "sources": sources, "hits": hits}
 
@@ -889,8 +870,6 @@ class DocumentQA:
             # Remove "company" so we don't look for a field that doesn't exist on resumes
             intent_fields = [f for f in intent_fields if f != "company"]
 
-        # When intent is explicit, show "N/A" too — user asked, they deserve an answer
-        # When no intent (generic browse), skip empty/zero values to keep it clean
         null_vals = ("",) if intent_fields else ("N/A", "", 0, 0.0)
 
         check = intent_fields if intent_fields else list(LABELS.keys())
@@ -914,7 +893,7 @@ class DocumentQA:
 
         q_words = set(re.findall(r'\b\w{3,}\b', query.lower()))
 
-        # Special case: employer/company queries — extract the full Experience section
+        # employer/company queries — extract the full Experience section
         if any(w in q_words for w in {"company", "employer", "worked", "work", "experience"}):
             exp_match = re.search(
                 r"(experience|employment|work\s*history)[^\n]*\n(.+?)(?=\n(?:education|skills|certifications|projects|achievements)\b|\Z)",
