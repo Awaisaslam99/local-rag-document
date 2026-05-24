@@ -100,7 +100,7 @@ class DocumentProcessor:
                  for obviously clear documents).
       Stage 2 — Zero-shot BART classifier for ambiguous cases.
 
-    This is intentionally general: no hardcoded company names or doc-specific
+    This is intentionally general: no hardcoded or doc-specific
     patterns. All regex patterns target structural markers that appear across
     any standard invoice, resume, or utility bill.
     """
@@ -463,14 +463,6 @@ class DocumentProcessor:
             return False
 
         def _is_valid_name(candidate, keywords=HEADER_KEYWORDS):
-            """
-            Return True if candidate string passes all name-sanity checks.
-            - 2–5 tokens (allows "M. Asif Akram")
-            - All tokens pass _is_name_token
-            - No keyword overlap
-            - Total length ≤ 60 chars
-            - At least one token ≥ 3 chars (not just initials)
-            """
             tokens = candidate.strip().split()
             if not (2 <= len(tokens) <= 5):
                 return False
